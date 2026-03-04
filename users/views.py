@@ -1,30 +1,40 @@
-from rest_framework import viewsets
-from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
 
+from tenants.mixins import TenantMixin
 from users.models import CustomUser
+from users.serializers import CustomUserSerializer, RegisterSerializer
 
 
-class TestView(APIView):
-    permission_classes = [IsAuthenticated]
+class RegisterView(APIView):
 
-    def get(self, request):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = RegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(
+                {"message": "Usuario creado con éxito"}, status=HTTP_201_CREATED
+            )
+
         return Response(
             {
-                "id": request.user.id,
-                "username": request.user.username,
-                "email": request.user.email,
-            }
+                "errors": serializer.errors,
+            },
+            status=HTTP_400_BAD_REQUEST,
         )
 
 
-@api_view(["GET"])
-def hello_world(request):
-    return Response({"message": "Hello LuckyDash"})
+class CustomUserViewSet(TenantMixin, ModelViewSet):
+    lookup_field = "uid"
+    serializer_class = CustomUserSerializer
+    http_method_names = ["get", "patch", "delete"]
 
-
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = CustomUser.objects.all()
-    # serializer_class = UserSerializer
+    def get_queryset(self):
+        return CustomUser.objects.filter(
+            membership__tenant=self.request.tenant
+        ).distinct()

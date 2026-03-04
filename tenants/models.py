@@ -12,7 +12,7 @@ from users.models import CustomUser
 
 class Tenant(BaseModel):
     uid = UIDField(prefix="tenant")
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=False)
     subscription_type = models.CharField(
         max_length=20, choices=SUBSCRIPTION_TYPES, default=DEFAUL_SUBSCRIPTION
     )
