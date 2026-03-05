@@ -17,11 +17,11 @@ class CustomUserSerializer(ModelSerializer):
 class RegisterSerializer(ModelSerializer):
     password = CharField(write_only=True, error_messages=ERROR_MESSAGES)
     confirm_password = CharField(write_only=True, error_messages=ERROR_MESSAGES)
-    wallet_name = CharField(error_messages=ERROR_MESSAGES)
+    wallet = CharField(error_messages=ERROR_MESSAGES)
 
     class Meta:
         model = CustomUser
-        fields = ["username", "password", "confirm_password", "wallet_name"]
+        fields = ["username", "password", "confirm_password", "wallet"]
 
     def validate_password(self, value):
         validate_password(value)
@@ -34,7 +34,7 @@ class RegisterSerializer(ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("confirm_password")
-        tenant_name = validated_data.pop("wallet_name")
+        tenant_name = validated_data.pop("wallet")
         with atomic():
             user = CustomUser.objects.create_user(**validated_data)
             tenant = Tenant.objects.create(name=tenant_name)
