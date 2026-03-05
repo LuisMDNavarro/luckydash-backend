@@ -30,22 +30,21 @@ class TenantViewSet(ModelViewSet):
             )
 
 
-# UPDATE: Terminar endpoint de cambio de Tenant
 class SwitchTenantView(TenantMixin, APIView):
     def post(self, request):
-        tenant_uid = request.data.get("tenant_uid")
-        if tenant_uid:
+        membership_uid = request.data.get("membership_uid")
+        if membership_uid:
             try:
                 user = self.request.user
-                tenant = Tenant.objects.get(uid=tenant_uid, membership__user=user)
-                request.tenant = tenant
+                membership = Membership.objects.get(uid=membership_uid, user=user)
+                request.session["membership_uid"] = membership.uid
                 return Response(
                     {
                         "message": "Cambio exitoso",
                     },
                     status=HTTP_200_OK,
                 )
-            except Tenant.DoesNotExist:
+            except Membership.DoesNotExist:
                 return Response(
                     {
                         "error": "La cartera no existe",
@@ -54,7 +53,7 @@ class SwitchTenantView(TenantMixin, APIView):
                 )
         return Response(
             {
-                "error": "La cartera no existe",
+                "error": "Se debe seleccionar una cartera",
             },
             status=HTTP_404_NOT_FOUND,
         )

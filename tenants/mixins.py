@@ -7,10 +7,10 @@ class TenantMixin:
         super().initial(request, *args, **kwargs)
 
         if request.user.is_authenticated:
-            tenant = getattr(request, "tenant", None)
-            if tenant:
+            membership_uid = request.session.get("membership_uid")
+            if membership_uid:
                 membership = Membership.objects.filter(
-                    user=request.user, tenant=request.tenant
+                    uid=membership_uid, user=request.user
                 ).first()
                 if membership:
                     request.tenant = membership.tenant
