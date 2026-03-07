@@ -35,6 +35,4 @@ class CustomUserViewSet(TenantMixin, ModelViewSet):
     http_method_names = ["get", "patch", "delete"]
 
     def get_queryset(self):
-        return CustomUser.objects.filter(
-            membership__tenant=self.request.tenant
-        ).distinct()
+        return CustomUser.objects.filter(uid=self.request.user.uid).distinct()
