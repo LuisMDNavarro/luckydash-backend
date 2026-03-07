@@ -10,20 +10,38 @@ SUBSCRIPTION_TYPES = (
 
 DEFAULT_ROLE = "member"
 OWNER_ROLE = "owner"
+ADMIN_ROLE = "admin"
 ROLE_CHOICES = (
     (OWNER_ROLE, "Propietario"),
-    ("admin", "Administrador"),
+    (ADMIN_ROLE, "Administrador"),
     (DEFAULT_ROLE, "Miembro"),
 )
 
+READ_ACTIONS = ["list", "retrieve"]
+EDIT_ACTIONS = ["create", "update", "partial_update", "destroy"]
+READ_ROLES = [OWNER_ROLE, ADMIN_ROLE, DEFAULT_ROLE]
+EDIT_ROLES = [OWNER_ROLE, ADMIN_ROLE]
+
 SUBSCRIPTION_LIMITS = {
     DEFAUL_SUBSCRIPTION: {
-        "cards": 3,
+        "tenants": 1,
+        "memberships": 3,
+        "accounts": 3,
+        "categorys": 10,
+        "tickets": False,
     },
     TEST_SUBSCRIPTION: {
-        "cards": 5,
+        "tenants": 1,
+        "memberships": 3,
+        "accounts": None,
+        "categorys": None,
+        "tickets": True,
     },
     PAID_SUBSCRIPTION: {
-        "cards": None,
+        "tenants": None,
+        "memberships": None,
+        "accounts": None,
+        "categorys": None,
+        "tickets": True,
     },
 }

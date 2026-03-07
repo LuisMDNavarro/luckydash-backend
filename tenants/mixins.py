@@ -4,8 +4,6 @@ from tenants.models import Membership
 
 class TenantMixin:
     def initial(self, request, *args, **kwargs):
-        super().initial(request, *args, **kwargs)
-
         if request.user.is_authenticated:
             membership_uid = request.session.get("membership_uid")
             if membership_uid:
@@ -35,3 +33,5 @@ class TenantMixin:
         else:
             request.tenant = None
             request.role = None
+
+        super().initial(request, *args, **kwargs)
