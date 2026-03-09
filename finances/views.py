@@ -10,7 +10,7 @@ from finances.serializers import (
 from tenants.mixins import TenantMixin
 
 
-# UPDATE: Aplicar Permissions de Tenant y Admin a todo
+# UPDATE: Limitar Accounts a 3 en Free (perform_create vs serializer create)
 class AccountViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
     serializer_class = AccountSerializer
@@ -19,7 +19,12 @@ class AccountViewSet(TenantMixin, ModelViewSet):
     def get_queryset(self):
         return Account.objects.filter(tenant=self.request.tenant).distinct()
 
+    def perform_create(self, serializer):
+        tenant = self.request.tenant
+        serializer.save(tenant=tenant)
 
+
+# UPDATE: Limitar Categories a 10 en Free
 class CategoryViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
     serializer_class = CategorySerializer
@@ -28,7 +33,12 @@ class CategoryViewSet(TenantMixin, ModelViewSet):
     def get_queryset(self):
         return Category.objects.filter(tenant=self.request.tenant).distinct()
 
+    def perform_create(self, serializer):
+        tenant = self.request.tenant
+        serializer.save(tenant=tenant)
 
+
+# UPDATE: Tickets solo para Paid
 class TicketViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
     serializer_class = TicketSerializer
@@ -36,6 +46,10 @@ class TicketViewSet(TenantMixin, ModelViewSet):
 
     def get_queryset(self):
         return Ticket.objects.filter(tenant=self.request.tenant).distinct()
+
+    def perform_create(self, serializer):
+        tenant = self.request.tenant
+        serializer.save(tenant=tenant)
 
 
 class TransactionViewSet(TenantMixin, ModelViewSet):
@@ -45,3 +59,7 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
 
     def get_queryset(self):
         return Transaction.objects.filter(tenant=self.request.tenant).distinct()
+
+    def perform_create(self, serializer):
+        tenant = self.request.tenant
+        serializer.save(tenant=tenant)

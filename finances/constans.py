@@ -5,10 +5,12 @@ CATEGORY_TYPES = (
 )
 
 DEFAULT_ACCOUNT_TYPE = "cash"
+DEBIT_TYPE = "debit"
+CREDIT_TYPE = "credit"
 ACCOUNT_TYPES = (
     (DEFAULT_ACCOUNT_TYPE, "Efectivo"),
-    ("debit", "Debito"),
-    ("credit", "Crédito"),
+    (DEBIT_TYPE, "Debito"),
+    (CREDIT_TYPE, "Crédito"),
 )
 
 DEFAULT_TRANSACTION_TYPE = "expense"
