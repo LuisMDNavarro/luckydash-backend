@@ -22,7 +22,7 @@ class Account(BaseModel):
     type = models.CharField(
         max_length=255, choices=ACCOUNT_TYPES, default=DEFAULT_ACCOUNT_TYPE
     )
-    # Cash or Debir
+    # Cash or Debit
     savings = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )

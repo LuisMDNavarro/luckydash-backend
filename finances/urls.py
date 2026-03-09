@@ -10,7 +10,7 @@ from finances.views import (
 
 router = DefaultRouter()
 router.register(r"accounts", AccountViewSet, basename="accounts")
-router.register(r"categorys", CategoryViewSet, basename="categorys")
+router.register(r"categories", CategoryViewSet, basename="categories")
 router.register(r"tickets", TicketViewSet, basename="tickets")
 router.register(r"transactions", TransactionViewSet, basename="transactions")
 
