@@ -23,5 +23,5 @@ class MembershipSerializer(ModelSerializer):
     def validate_user(self, value):
         user = CustomUser.objects.filter(username=value).first()
         if not user:
-            raise ValidationError({"user": "El usuario no existe"})
+            raise ValidationError("El usuario no existe")
         return user
