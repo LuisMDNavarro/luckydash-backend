@@ -1,3 +1,4 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.viewsets import ModelViewSet
 
 from finances.models import Account, Category, Ticket, Transaction
@@ -63,3 +64,10 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
     def perform_create(self, serializer):
         tenant = self.request.tenant
         serializer.save(tenant=tenant)
+
+    def perform_destroy(self, instance):
+        if instance.parent_transaction is not None:
+            raise ValidationError(
+                {"error": "No puedes borrar una cuota de una Transaccion a cuotas"}
+            )
+        return super().perform_destroy(instance)

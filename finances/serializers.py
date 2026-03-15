@@ -1,7 +1,16 @@
-from rest_framework.serializers import ModelSerializer, ValidationError
+from django.db.transaction import atomic
+from rest_framework.serializers import CharField, ModelSerializer, ValidationError
 
-from finances.constans import CREDIT_TYPE, DEBIT_TYPE, DEFAULT_ACCOUNT_TYPE
+from finances.constans import (
+    CREDIT_TYPE,
+    DEBIT_TYPE,
+    DEFAULT_ACCOUNT_TYPE,
+    MAX_INSTALLMENTS,
+    MIN_INSTALLMENTS,
+    TRANSFER_TRANSACTION_TYPE,
+)
 from finances.models import Account, Category, Ticket, Transaction
+from luckydash.constants import ERROR_MESSAGES
 
 
 class AccountSerializer(ModelSerializer):
@@ -56,8 +65,10 @@ class CategorySerializer(ModelSerializer):
         fields = ["uid", "name", "color", "type"]
 
 
-# UPDATE: Validar foreing_keys a Tickets y Transactions
+# UPDATE: Tickets crea Transactions simples, como crear Transactions en cuotas?
 class TicketSerializer(ModelSerializer):
+    account = CharField(error_messages=ERROR_MESSAGES)
+
     class Meta:
         model = Ticket
         fields = [
@@ -69,8 +80,22 @@ class TicketSerializer(ModelSerializer):
             "approval_date",
         ]
 
+    def validate_account(self, value):
+        request = self.context.get("request")
+        account = Account.objects.filter(uid=value, tenant=request.tenant).first()
+        if not account:
+            raise ValidationError("La cuenta no existe")
+        return account
+
 
 class TransactionSerializer(ModelSerializer):
+    from_account = CharField(error_messages=ERROR_MESSAGES)
+    category = CharField(error_messages=ERROR_MESSAGES)
+    ticket = CharField(read_only=True)
+    to_account = CharField(required=False, error_messages=ERROR_MESSAGES)
+    parent_transaction = CharField(read_only=True)
+    installment_number = CharField(read_only=True)
+
     class Meta:
         model = Transaction
         fields = [
@@ -89,3 +114,70 @@ class TransactionSerializer(ModelSerializer):
             "to_account",
             "is_monthly",
         ]
+
+    def validate_from_account(self, value):
+        request = self.context.get("request")
+        account = Account.objects.filter(uid=value, tenant=request.tenant).first()
+        if not account:
+            raise ValidationError("La cuenta no existe")
+        return account
+
+    def validate_category(self, value):
+        request = self.context.get("request")
+        category = Category.objects.filter(uid=value, tenant=request.tenant).first()
+        if not category:
+            raise ValidationError("La categoria no existe")
+        return category
+
+    def validate_installments(self, value):
+        if value < MIN_INSTALLMENTS:
+            raise ValidationError(f"El minimo de cuotas es: {MIN_INSTALLMENTS}")
+        if value > MAX_INSTALLMENTS:
+            raise ValidationError(f"Excede el maximo de cuotas: {MAX_INSTALLMENTS}")
+        return value
+
+    def validate_to_account(self, value):
+        request = self.context.get("request")
+        account = Account.objects.filter(uid=value, tenant=request.tenant).first()
+        if not account:
+            raise ValidationError("La cuenta no existe")
+        return account
+
+    def validate(self, data):
+        if data.get("type") == TRANSFER_TRANSACTION_TYPE:
+            data.pop("installments", None)
+            to_account = data.get("to_account")
+            if to_account is not None and data.get("from_account") == to_account:
+                raise ValidationError(
+                    "La cuenta destino no puede ser la misma que la cuenta origen."
+                )
+        else:
+            data.pop("to_account", None)
+        return data
+
+    def update(self, instance, validated_data):
+        if (
+            instance.installments
+            or instance.parent_transaction
+            or instance.installment_number
+        ):
+            raise ValidationError("No puedes modificar las Transacciones a cuotas")
+        if validated_data.get("type") != TRANSFER_TRANSACTION_TYPE:
+            instance.to_account = None
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        installments = validated_data.get("installments")
+        if installments:
+            with atomic():
+                partial_amount = validated_data.get("amount") / installments
+                validated_data["amount"] = partial_amount
+                validated_data["installment_number"] = 1
+                transaction = Transaction.objects.create(**validated_data)
+                validated_data["parent_transaction"] = transaction
+                for i in range(MIN_INSTALLMENTS, installments + 1):
+                    validated_data["installment_number"] = i
+                    Transaction.objects.create(**validated_data)
+        else:
+            transaction = Transaction.objects.create(**validated_data)
+        return transaction
