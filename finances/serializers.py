@@ -1,5 +1,11 @@
 from django.db.transaction import atomic
-from rest_framework.serializers import CharField, ModelSerializer, ValidationError
+from rest_framework.serializers import (
+    CharField,
+    DecimalField,
+    ModelSerializer,
+    Serializer,
+    ValidationError,
+)
 
 from finances.constans import (
     CREDIT_TYPE,
@@ -65,9 +71,27 @@ class CategorySerializer(ModelSerializer):
         fields = ["uid", "name", "color", "type"]
 
 
-# UPDATE: Tickets crea Transactions simples, como crear Transactions en cuotas?
+class CategoryField(CharField):
+
+    def to_internal_value(self, data):
+        uid = super().to_internal_value(data)
+        tenant = self.context["request"].tenant
+        category = Category.objects.filter(uid=uid, tenant=tenant).first()
+        if not category:
+            raise ValidationError("La categoria no existe")
+        return category
+
+
+class TransactionInputSerializer(Serializer):
+    category = CategoryField(error_messages=ERROR_MESSAGES)
+    amount = DecimalField(max_digits=10, decimal_places=2)
+    description = CharField(error_messages=ERROR_MESSAGES)
+
+
 class TicketSerializer(ModelSerializer):
     account = CharField(error_messages=ERROR_MESSAGES)
+    total_amount = CharField(read_only=True)
+    transactions = TransactionInputSerializer(many=True, write_only=True)
 
     class Meta:
         model = Ticket
@@ -78,6 +102,7 @@ class TicketSerializer(ModelSerializer):
             "description",
             "purchase_date",
             "approval_date",
+            "transactions",
         ]
 
     def validate_account(self, value):
@@ -86,6 +111,59 @@ class TicketSerializer(ModelSerializer):
         if not account:
             raise ValidationError("La cuenta no existe")
         return account
+
+    def update(self, instance, validated_data):
+        if (
+            validated_data.get("account")
+            or validated_data.get("purchase_date")
+            or validated_data.get("approval_date")
+        ):
+            transactions = Transaction.objects.filter(ticket=instance)
+            for t in transactions:
+                t.from_account = validated_data.get("account", instance.account)
+                t.purchase_date = validated_data.get(
+                    "purchase_date", instance.purchase_date
+                )
+                t.approval_date = validated_data.get(
+                    "approval_date", instance.approval_date
+                )
+                t.save()
+        transactions_data = validated_data.pop("transactions", None)
+        if transactions_data:
+            with atomic():
+                validated_data["total_amount"] = instance.total_amount + sum(
+                    t["amount"] for t in transactions_data
+                )
+                for transaction in transactions_data:
+                    Transaction.objects.create(
+                        tenant=self.context["request"].tenant,
+                        from_account=validated_data.get("account", instance.account),
+                        purchase_date=validated_data.get(
+                            "purchase_date", instance.purchase_date
+                        ),
+                        approval_date=validated_data.get(
+                            "approval_date", instance.approval_date
+                        ),
+                        ticket=instance,
+                        **transaction,
+                    )
+        return super().update(instance, validated_data)
+
+    def create(self, validated_data):
+        with atomic():
+            transactions_data = validated_data.pop("transactions")
+            validated_data["total_amount"] = sum(t["amount"] for t in transactions_data)
+            ticket = Ticket.objects.create(**validated_data)
+            for transaction in transactions_data:
+                Transaction.objects.create(
+                    tenant=self.context["request"].tenant,
+                    from_account=validated_data["account"],
+                    purchase_date=validated_data["purchase_date"],
+                    approval_date=validated_data.get("approval_date"),
+                    ticket=ticket,
+                    **transaction,
+                )
+        return ticket
 
 
 class TransactionSerializer(ModelSerializer):
@@ -164,6 +242,16 @@ class TransactionSerializer(ModelSerializer):
             raise ValidationError("No puedes modificar las Transacciones a cuotas")
         if validated_data.get("type") != TRANSFER_TRANSACTION_TYPE:
             instance.to_account = None
+        if instance.ticket:
+            validated_data["from_account"] = instance.from_account
+            validated_data["purchase_date"] = instance.purchase_date
+            validated_data["approval_date"] = instance.approval_date
+            if instance.amount != validated_data["amount"]:
+                ticket = instance.ticket
+                ticket.total_amount = ticket.total_amount + (
+                    validated_data["amount"] - instance.amount
+                )
+                ticket.save()
         return super().update(instance, validated_data)
 
     def create(self, validated_data):

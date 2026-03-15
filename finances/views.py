@@ -66,6 +66,11 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
         serializer.save(tenant=tenant)
 
     def perform_destroy(self, instance):
+        if instance.ticket:
+            ticket = instance.ticket
+            ticket.total_amount -= instance.amount
+            ticket.save()
+
         if instance.parent_transaction is not None:
             raise ValidationError(
                 {"error": "No puedes borrar una cuota de una Transaccion a cuotas"}

@@ -58,7 +58,7 @@ class Category(BaseModel):
 class Ticket(BaseModel):
     uid = UIDField(prefix="ticket")
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
-    account = models.ForeignKey(Account, on_delete=models.PROTECT)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, null=False)
     description = models.CharField(max_length=255, null=False)
     purchase_date = models.DateTimeField(null=False)
@@ -71,11 +71,11 @@ class Ticket(BaseModel):
 class Transaction(BaseModel):
     uid = UIDField(prefix="transaction")
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE)
-    ticket = models.ForeignKey(Ticket, on_delete=models.SET_NULL, null=True, blank=True)
+    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, null=True, blank=True)
     from_account = models.ForeignKey(
-        Account, on_delete=models.PROTECT, related_name="outgoing_transactions"
+        Account, on_delete=models.CASCADE, related_name="outgoing_transactions"
     )
-    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
     type = models.CharField(
         max_length=255, choices=TRANSACTION_TYPES, default=DEFAULT_TRANSACTION_TYPE
     )
@@ -97,7 +97,7 @@ class Transaction(BaseModel):
     # Intern transfer
     to_account = models.ForeignKey(
         Account,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="incoming_transactions",
         null=True,
         blank=True,
