@@ -5,6 +5,7 @@ from users.views import (
     CookieTokenRefreshView,
     CustomUserViewSet,
     LoginView,
+    LogoutView,
     RegisterView,
 )
 
@@ -15,5 +16,6 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", LoginView.as_view(), name="token_obtain_pair"),
     path("refresh/", CookieTokenRefreshView.as_view(), name="token_refresh"),
+    path("logout/", LogoutView.as_view(), name="logout"),
     path("", include(router.urls)),
 ]

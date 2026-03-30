@@ -1,4 +1,4 @@
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
@@ -96,6 +96,24 @@ class CookieTokenRefreshView(APIView):
             samesite="Lax",
             max_age=86400,
         )
+        return response
+
+
+class LogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.COOKIES.get("refresh_token")
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass
+        response = Response({"message": "Cesión cerrada"})
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+
         return response
 
 
