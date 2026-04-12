@@ -2,7 +2,6 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework.views import APIView
-from rest_framework.viewsets import ModelViewSet
 from rest_framework_simplejwt.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -117,10 +116,15 @@ class LogoutView(APIView):
         return response
 
 
-class CustomUserViewSet(TenantMixin, ModelViewSet):
-    lookup_field = "uid"
-    serializer_class = CustomUserSerializer
-    http_method_names = ["get", "patch", "delete"]
+class ProfileView(TenantMixin, APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return CustomUser.objects.filter(uid=self.request.user.uid).distinct()
+    def get(self, request):
+        serializer = CustomUserSerializer(request.user)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = CustomUserSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
