@@ -1,6 +1,6 @@
-DEFAULT_CATEGORY_TYPE = "expenses"
+DEFAULT_CATEGORY_TYPE = "expense"
 CATEGORY_TYPES = (
-    ("expenses", "Gastos"),
+    (DEFAULT_CATEGORY_TYPE, "Gastos"),
     ("income", "Ingresos"),
 )
 
