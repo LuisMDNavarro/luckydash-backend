@@ -61,8 +61,8 @@ class Ticket(BaseModel):
     account = models.ForeignKey(Account, on_delete=models.CASCADE)
     total_amount = models.DecimalField(max_digits=12, decimal_places=2, null=False)
     description = models.CharField(max_length=255, null=False)
-    purchase_date = models.DateTimeField(null=False)
-    approval_date = models.DateTimeField(null=True, blank=True)
+    purchase_date = models.DateField(null=False)
+    approval_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
         return super().__str__() + f"-[{self.description}]"
@@ -81,7 +81,7 @@ class Transaction(BaseModel):
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=False)
     description = models.CharField(max_length=255, null=False)
-    purchase_date = models.DateTimeField(null=False)
+    purchase_date = models.DateField(null=False)
     # Expense on installments
     installments = models.PositiveSmallIntegerField(null=True, blank=True)
     installment_number = models.PositiveSmallIntegerField(null=True, blank=True)
@@ -93,7 +93,7 @@ class Transaction(BaseModel):
         related_name="installment_transactions",
     )
     # Credit expense
-    approval_date = models.DateTimeField(null=True, blank=True)
+    approval_date = models.DateField(null=True, blank=True)
     # Intern transfer
     to_account = models.ForeignKey(
         Account,
