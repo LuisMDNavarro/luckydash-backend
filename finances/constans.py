@@ -15,8 +15,10 @@ ACCOUNT_TYPES = (
 
 DEFAULT_TRANSACTION_TYPE = "expense"
 TRANSFER_TRANSACTION_TYPE = "transfer"
+INSTALLMENTS_TRANSACTION_TYPE = "installments_expense"
 TRANSACTION_TYPES = (
     (DEFAULT_TRANSACTION_TYPE, "Gasto"),
+    (INSTALLMENTS_TRANSACTION_TYPE, "Gasto a Cuotas"),
     ("income", "Ingreso"),
     (TRANSFER_TRANSACTION_TYPE, "Transferencia"),
     ("savings_expense", "Ingreso de Ahorro"),

@@ -11,6 +11,7 @@ from finances.constans import (
     CREDIT_TYPE,
     DEBIT_TYPE,
     DEFAULT_ACCOUNT_TYPE,
+    INSTALLMENTS_TRANSACTION_TYPE,
     MAX_INSTALLMENTS,
     MIN_INSTALLMENTS,
     TRANSFER_TRANSACTION_TYPE,
@@ -225,10 +226,16 @@ class TransactionSerializer(ModelSerializer):
         if data.get("type") == TRANSFER_TRANSACTION_TYPE:
             data.pop("installments", None)
             to_account = data.get("to_account")
+            if not data.get("to_account"):
+                raise ValidationError({"to_account": "Este campo es obligatorio."})
             if to_account is not None and data.get("from_account") == to_account:
                 raise ValidationError(
                     "La cuenta destino no puede ser la misma que la cuenta origen."
                 )
+        elif data.get("type") == INSTALLMENTS_TRANSACTION_TYPE:
+            data.pop("to_account", None)
+            if not data.get("installments"):
+                raise ValidationError({"installments": "Este campo es obligatorio."})
         else:
             data.pop("to_account", None)
         return data
