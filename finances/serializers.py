@@ -223,8 +223,14 @@ class TransactionSerializer(ModelSerializer):
         return account
 
     def validate(self, data):
-        if data.get("type") == TRANSFER_TRANSACTION_TYPE:
+        if data.get("type") != TRANSFER_TRANSACTION_TYPE:
+            data.pop("to_account", None)
+        if data.get("type") != INSTALLMENTS_TRANSACTION_TYPE:
             data.pop("installments", None)
+            data.pop("installment_number", None)
+        elif not data.get("to_account"):
+            data.pop("to_account", None)
+        elif data.get("type") == TRANSFER_TRANSACTION_TYPE:
             to_account = data.get("to_account")
             if not data.get("to_account"):
                 raise ValidationError({"to_account": "Este campo es obligatorio."})
@@ -232,8 +238,6 @@ class TransactionSerializer(ModelSerializer):
                 raise ValidationError(
                     "La cuenta destino no puede ser la misma que la cuenta origen."
                 )
-        elif data.get("type") == INSTALLMENTS_TRANSACTION_TYPE:
-            data.pop("to_account", None)
             if not data.get("installments"):
                 raise ValidationError({"installments": "Este campo es obligatorio."})
         else:
