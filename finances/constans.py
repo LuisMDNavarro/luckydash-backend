@@ -15,14 +15,17 @@ ACCOUNT_TYPES = (
 
 DEFAULT_TRANSACTION_TYPE = "expense"
 TRANSFER_TRANSACTION_TYPE = "transfer"
+INCOME_TRANSACTION_TYPE = "income"
 INSTALLMENTS_TRANSACTION_TYPE = "installments_expense"
+INCOME_SAVINGS_TRANSACTION_TYPE = "savings_income"
+EXPENSE_SAVINGS_TRANSACTION_TYPE = "savings_expense"
 TRANSACTION_TYPES = (
     (DEFAULT_TRANSACTION_TYPE, "Gasto"),
     (INSTALLMENTS_TRANSACTION_TYPE, "Gasto a Cuotas"),
-    ("income", "Ingreso"),
+    (INCOME_TRANSACTION_TYPE, "Ingreso"),
     (TRANSFER_TRANSACTION_TYPE, "Transferencia"),
-    ("savings_expense", "Ingreso de Ahorro"),
-    ("savings_income", "Gasto de Ahorro"),
+    (INCOME_SAVINGS_TRANSACTION_TYPE, "Ingreso de Ahorro"),
+    (EXPENSE_SAVINGS_TRANSACTION_TYPE, "Gasto de Ahorro"),
 )
 MIN_INSTALLMENTS = 2
 MAX_INSTALLMENTS = 12

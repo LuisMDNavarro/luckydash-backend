@@ -31,6 +31,9 @@ class Account(BaseModel):
     credit_limit = models.DecimalField(
         max_digits=12, decimal_places=2, null=True, blank=True
     )
+    credit_available = models.DecimalField(
+        max_digits=12, decimal_places=2, null=True, blank=True
+    )
     billing_date = models.IntegerField(
         null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(31)]
     )

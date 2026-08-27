@@ -1,6 +1,15 @@
 from rest_framework.exceptions import ValidationError
 from rest_framework.viewsets import ModelViewSet
 
+from finances.constans import (
+    CREDIT_TYPE,
+    DEFAULT_TRANSACTION_TYPE,
+    EXPENSE_SAVINGS_TRANSACTION_TYPE,
+    INCOME_SAVINGS_TRANSACTION_TYPE,
+    INCOME_TRANSACTION_TYPE,
+    INSTALLMENTS_TRANSACTION_TYPE,
+    TRANSFER_TRANSACTION_TYPE,
+)
 from finances.models import Account, Category, Ticket, Transaction
 from finances.serializers import (
     AccountSerializer,
@@ -52,6 +61,17 @@ class TicketViewSet(TenantMixin, ModelViewSet):
         tenant = self.request.tenant
         serializer.save(tenant=tenant)
 
+    def perform_destroy(self, instance):
+        account = instance.account
+        # Undo change in account
+        if account.type == CREDIT_TYPE:
+            account.credit_available = account.credit_available + instance.total_amount
+        else:
+            account.amount = account.amount + instance.total_amount
+        account.save()
+
+        return super().perform_destroy(instance)
+
 
 class TransactionViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
@@ -75,4 +95,46 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
             raise ValidationError(
                 {"error": "No puedes borrar una cuota de una Transaccion a cuotas"}
             )
+        from_account = instance.from_account
+        # Undo change in from_account
+        if from_account.type == CREDIT_TYPE:
+            if instance.type == INSTALLMENTS_TRANSACTION_TYPE:
+                total_amount = instance.amount
+                installments = Transaction.objects.filter(parent_transaction=instance)
+                for i in installments:
+                    total_amount += i.amount
+                from_account.credit_available = (
+                    from_account.credit_available + total_amount
+                )
+            if instance.type in [DEFAULT_TRANSACTION_TYPE, TRANSFER_TRANSACTION_TYPE]:
+                from_account.credit_available = (
+                    from_account.credit_available + instance.amount
+                )
+            if instance.type == INCOME_TRANSACTION_TYPE:
+                from_account.credit_available = (
+                    from_account.credit_available - instance.amount
+                )
+        else:
+            if instance.type in [DEFAULT_TRANSACTION_TYPE, TRANSFER_TRANSACTION_TYPE]:
+                from_account.amount = from_account.amount + instance.amount
+            if instance.type == INCOME_TRANSACTION_TYPE:
+                from_account.amount = from_account.amount - instance.amount
+            if instance.type == EXPENSE_SAVINGS_TRANSACTION_TYPE:
+                from_account.savings = from_account.savings + instance.amount
+            if instance.type == INCOME_SAVINGS_TRANSACTION_TYPE:
+                from_account.savings = from_account.savings - instance.amount
+
+        from_account.save()
+
+        to_account = instance.to_account
+        # Undo change in to_account
+        if instance.type == TRANSFER_TRANSACTION_TYPE:
+            if to_account.type == CREDIT_TYPE:
+                to_account.credit_available = (
+                    to_account.credit_available - instance.amount
+                )
+            else:
+                to_account.amount = to_account.amount - instance.amount
+            to_account.save()
+
         return super().perform_destroy(instance)
