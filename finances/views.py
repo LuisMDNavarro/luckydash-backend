@@ -163,7 +163,7 @@ class DashboardView(TenantMixin, APIView):
                 {"detail": "Invalid date format. Use YYYY-MM-DD"}, status=400
             )
 
-        accounts = Account.objects.filter(tenant=request.tenant)[:4]
+        accounts = Account.objects.filter(tenant=request.tenant)
         savings = 0
         total = 0
         debt = 0
@@ -201,7 +201,7 @@ class DashboardView(TenantMixin, APIView):
                 incomes_day += transaction.amount
         difference = incomes_day - expenses_day
 
-        account_serializer = AccountSerializer(accounts, many=True)
+        account_serializer = AccountSerializer(accounts[:4], many=True)
         transactions_serializer = TransactionSerializer(transactions_day, many=True)
         response = {
             "accounts": account_serializer.data,
