@@ -77,7 +77,8 @@ class AccountSerializer(ModelSerializer):
         return super().update(instance, validated_data)
 
     def create(self, validated_data):
-        validated_data["credit_available"] = validated_data["credit_limit"]
+        if validated_data["type"] in [CREDIT_TYPE]:
+            validated_data["credit_available"] = validated_data["credit_limit"]
         return super().create(validated_data)
 
 
