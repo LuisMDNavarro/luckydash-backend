@@ -26,3 +26,4 @@ typing_extensions==4.15.0
 tzdata==2025.3
 ulid-py==1.1.0
 virtualenv==20.38.0
+whitenoise==6.12.0
