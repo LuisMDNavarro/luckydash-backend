@@ -1,4 +1,10 @@
+import calendar
+from datetime import datetime
+
 from rest_framework.exceptions import ValidationError
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 
 from finances.constans import (
@@ -18,6 +24,7 @@ from finances.serializers import (
     TransactionSerializer,
 )
 from tenants.mixins import TenantMixin
+from tenants.permissions import TenantRequired
 
 
 # UPDATE: Limitar Accounts a 3 en Free (perform_create vs serializer create)
@@ -138,3 +145,74 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
             to_account.save()
 
         return super().perform_destroy(instance)
+
+
+class DashboardView(TenantMixin, APIView):
+    permission_classes = [IsAuthenticated, TenantRequired]
+
+    def get(self, request):
+        date_string = request.query_params.get("date")
+
+        if not date_string:
+            return Response({"detail": "Date is required"}, status=400)
+
+        try:
+            date = datetime.strptime(date_string, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"detail": "Invalid date format. Use YYYY-MM-DD"}, status=400
+            )
+
+        accounts = Account.objects.filter(tenant=request.tenant)[:4]
+        savings = 0
+        total = 0
+        debt = 0
+        for account in accounts:
+            if account.savings:
+                savings += account.savings
+            if account.amount:
+                total += account.amount
+            if account.credit_limit:
+                debt += account.credit_limit - account.credit_available
+        available = total - debt
+
+        transactions = Transaction.objects.filter(
+            tenant=request.tenant, purchase_date__month=date.month
+        )
+        expenses = 0
+        incomes = 0
+        for transaction in transactions:
+            if transaction.type == DEFAULT_TRANSACTION_TYPE:
+                expenses += transaction.amount
+            elif transaction.type == INCOME_TRANSACTION_TYPE:
+                incomes += transaction.amount
+        days_in_month = calendar.monthrange(date.year, date.month)[1]
+        average = expenses / days_in_month
+
+        transactions_day = Transaction.objects.filter(
+            tenant=request.tenant, purchase_date=date
+        )
+        incomes_day = 0
+        expenses_day = 0
+        for transaction in transactions_day:
+            if transaction.type == DEFAULT_TRANSACTION_TYPE:
+                expenses_day += transaction.amount
+            elif transaction.type == INCOME_TRANSACTION_TYPE:
+                incomes_day += transaction.amount
+        difference = incomes_day - expenses_day
+
+        account_serializer = AccountSerializer(accounts, many=True)
+        transactions_serializer = TransactionSerializer(transactions_day, many=True)
+        response = {
+            "accounts": account_serializer.data,
+            "available": available,
+            "savings": savings,
+            "incomes": incomes,
+            "expenses": expenses,
+            "average": average,
+            "incomes_day": incomes_day,
+            "expenses_day": expenses_day,
+            "difference": difference,
+            "transactions": transactions_serializer.data,
+        }
+        return Response(response)
