@@ -86,7 +86,35 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
     http_method_names = ["post", "get", "patch", "delete"]
 
     def get_queryset(self):
-        return Transaction.objects.filter(tenant=self.request.tenant).distinct()
+        date_string = self.request.query_params.get("date")
+        if not date_string:
+            date = datetime.today()
+        try:
+            date = datetime.strptime(date_string, "%Y-%m-%d").date()
+        except ValueError:
+            return Response(
+                {"detail": "Invalid date format. Use YYYY-MM-DD"}, status=400
+            )
+        transactions = (
+            Transaction.objects.filter(
+                tenant=self.request.tenant, purchase_date__month=date.month
+            )
+            .distinct()
+            .order_by("-purchase_date")
+        )
+        account_string = self.request.query_params.get("account")
+        category_string = self.request.query_params.get("category")
+        if account_string:
+            account = Account.objects.get(
+                tenant=self.request.tenant, uid=account_string
+            )
+            transactions = transactions.filter(from_account=account)
+        if category_string:
+            category = Category.objects.get(
+                tenant=self.request.tenant, uid=category_string
+            )
+            transactions = transactions.filter(category=category)
+        return transactions
 
     def perform_create(self, serializer):
         tenant = self.request.tenant
