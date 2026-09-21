@@ -88,20 +88,25 @@ class TransactionViewSet(TenantMixin, ModelViewSet):
     def get_queryset(self):
         date_string = self.request.query_params.get("date")
         if not date_string:
-            date = datetime.today()
-        try:
-            date = datetime.strptime(date_string, "%Y-%m-%d").date()
-        except ValueError:
-            return Response(
-                {"detail": "Invalid date format. Use YYYY-MM-DD"}, status=400
+            transactions = (
+                Transaction.objects.filter(tenant=self.request.tenant)
+                .distinct()
+                .order_by("-purchase_date")
             )
-        transactions = (
-            Transaction.objects.filter(
-                tenant=self.request.tenant, purchase_date__month=date.month
+        else:
+            try:
+                date = datetime.strptime(date_string, "%Y-%m-%d").date()
+            except Exception:
+                return Response(
+                    {"detail": "Invalid date format. Use YYYY-MM-DD"}, status=400
+                )
+            transactions = (
+                Transaction.objects.filter(
+                    tenant=self.request.tenant, purchase_date__month=date.month
+                )
+                .distinct()
+                .order_by("-purchase_date")
             )
-            .distinct()
-            .order_by("-purchase_date")
-        )
         account_string = self.request.query_params.get("account")
         category_string = self.request.query_params.get("category")
         if account_string:
