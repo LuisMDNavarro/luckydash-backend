@@ -62,7 +62,11 @@ class TicketViewSet(TenantMixin, ModelViewSet):
     http_method_names = ["post", "get", "patch", "delete"]
 
     def get_queryset(self):
-        return Ticket.objects.filter(tenant=self.request.tenant).distinct()
+        return (
+            Ticket.objects.filter(tenant=self.request.tenant)
+            .distinct()
+            .order_by("-purchase_date")
+        )
 
     def perform_create(self, serializer):
         tenant = self.request.tenant
