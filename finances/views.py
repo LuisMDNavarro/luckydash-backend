@@ -215,9 +215,16 @@ class DashboardView(TenantMixin, APIView):
         expenses = 0
         incomes = 0
         for transaction in transactions:
-            if transaction.type == DEFAULT_TRANSACTION_TYPE:
+            if transaction.type in [
+                DEFAULT_TRANSACTION_TYPE,
+                EXPENSE_SAVINGS_TRANSACTION_TYPE,
+                INSTALLMENTS_TRANSACTION_TYPE,
+            ]:
                 expenses += transaction.amount
-            elif transaction.type == INCOME_TRANSACTION_TYPE:
+            elif transaction.type in [
+                INCOME_TRANSACTION_TYPE,
+                INCOME_SAVINGS_TRANSACTION_TYPE,
+            ]:
                 incomes += transaction.amount
         days_in_month = calendar.monthrange(date.year, date.month)[1]
         average = expenses / days_in_month
