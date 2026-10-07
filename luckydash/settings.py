@@ -33,7 +33,10 @@ DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
-# CSRF_TRUSTED_ORIGINS = [""] #Update with domain
+CSRF_TRUSTED_ORIGINS = [
+    "http://ec2-98-87-89-82.compute-1.amazonaws.com",
+    "http://localhost:3000",
+]  # Update with domain
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True  # Update with domain
 # CORS_ALLOWED_ORIGINS = [""] #Update with domain
