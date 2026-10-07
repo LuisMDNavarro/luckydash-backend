@@ -1,3 +1,4 @@
+from dateutil.relativedelta import relativedelta
 from django.db.transaction import atomic
 from rest_framework.serializers import (
     CharField,
@@ -508,8 +509,12 @@ class TransactionSerializer(ModelSerializer):
                 transaction = Transaction.objects.create(**validated_data)
                 validated_data["parent_transaction"] = transaction
                 for i in range(MIN_INSTALLMENTS, installments + 1):
-                    validated_data["installment_number"] = i
-                    Transaction.objects.create(**validated_data)
+                    transaction_data = validated_data.copy()
+                    transaction_data["installment_number"] = i
+                    transaction_data["purchase_date"] = validated_data[
+                        "purchase_date"
+                    ] + relativedelta(months=i - 1)
+                    Transaction.objects.create(**transaction_data)
             else:
                 transaction = Transaction.objects.create(**validated_data)
 
