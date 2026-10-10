@@ -17,6 +17,7 @@ from finances.constans import (
     TRANSFER_TRANSACTION_TYPE,
 )
 from finances.models import Account, Category, Ticket, Transaction
+from finances.pagination import StandardPagination
 from finances.serializers import (
     AccountSerializer,
     CategorySerializer,
@@ -59,6 +60,7 @@ class CategoryViewSet(TenantMixin, ModelViewSet):
 class TicketViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
     serializer_class = TicketSerializer
+    pagination_class = StandardPagination
     http_method_names = ["post", "get", "patch", "delete"]
 
     def get_queryset(self):
@@ -87,6 +89,7 @@ class TicketViewSet(TenantMixin, ModelViewSet):
 class TransactionViewSet(TenantMixin, ModelViewSet):
     lookup_field = "uid"
     serializer_class = TransactionSerializer
+    pagination_class = StandardPagination
     http_method_names = ["post", "get", "patch", "delete"]
 
     def get_queryset(self):
